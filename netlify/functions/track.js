@@ -1,50 +1,63 @@
-exports.handler = async function(event) {
-  // Получить IP клиента максимально надёжно
-  const ip =
-    event.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-    event.headers["client-ip"] ||
-    event.headers["x-real-ip"] ||
-    "IP not found";
+const fetch = require('node-fetch');
 
-  let geo = {};
-  let error = null;
+exports.handler = async (event) => {
+  let logText = "";
+  let ip = event.headers['x-forwarded-for'] || event.headers['client-ip'] || "Unknown";
+  ip = ip.split(',')[0].trim();
 
-  // Есть ли координаты от клиента?
-  let coords = null;
-  if (event.body) {
-    try {
-      const body = JSON.parse(event.body);
-      if (body.lat && body.lon) {
-        coords = { lat: body.lat, lon: body.lon };
-        // Логируем координаты явно!
-        console.log(`IP: ${ip} | GEO COORDS: ${coords.lat},${coords.lon}`);
-      }
-    } catch {}
-  }
-
-  // Всегда делаем запрос по IP через ip-api.com
+  // Получаем геоданные по IP
+  let ipData;
   try {
-    const response = await fetch(
-      `http://ip-api.com/json/${ip}?fields=status,message,country,regionName,city,zip,isp,query`
-    );
-    geo = await response.json();
-    if (geo.status !== "success") {
-      error = geo.message || "Unknown error";
-    }
+    const res = await fetch(`http://ip-api.com/json/${ip}?fields=66846719`);
+    ipData = await res.json();
   } catch (e) {
-    error = e.message;
+    ipData = { status: 'fail', message: e.message };
   }
 
-  if (!error) {
-    console.log(
-      `IP: ${ip} | ${geo.country}, ${geo.regionName}, ${geo.city}, ${geo.zip}, ISP: ${geo.isp}`
-    );
+  // Данные по IP
+  if (ipData.status === 'success') {
+    logText += `IP: ${ip} | Город (по IP): ${ipData.city}, Регион: ${ipData.regionName}, Страна: ${ipData.country} | Индекс: ${ipData.zip} | ISP: ${ipData.isp} [Источник: ip-api.com]\n`;
+    logText += `❗️Город определён по базе IP, может не совпадать с реальным положением, особенно на мобильном интернете.\n`;
   } else {
-    console.log(`IP: ${ip} | Гео ошибка: ${error}`);
+    logText += `IP: ${ip} | Не удалось получить геоданные по IP: ${ipData.message}\n`;
   }
+
+  // Парсим тело запроса
+  let coordsData, geoError;
+  try {
+    const body = JSON.parse(event.body || '{}');
+    if (body.lat && body.lon) coordsData = { lat: body.lat, lon: body.lon };
+    if (body.geoError) geoError = body.geoError;
+  } catch {}
+
+  // Если координаты есть — обратное геокодирование
+  if (coordsData) {
+    try {
+      const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coordsData.lat}&lon=${coordsData.lon}`);
+      const geoJson = await geoRes.json();
+      const cityByGPS = geoJson.address.city || geoJson.address.town || geoJson.address.village || geoJson.address.state || "Не найдено";
+      logText += `GPS: ${coordsData.lat}, ${coordsData.lon} | Город (по GPS): ${cityByGPS} [Источник: браузер+OSM]\n`;
+
+      if (ipData.city && cityByGPS !== ipData.city) {
+        logText += `🔄 Несовпадение: город по IP "${ipData.city}" ≠ город по GPS "${cityByGPS}"\n`;
+      } else if (ipData.city) {
+        logText += `✅ Совпадение города по IP и GPS (${cityByGPS})\n`;
+      }
+    } catch (e) {
+      logText += `Ошибка обратного геокодирования: ${e.message}\n`;
+    }
+  } else if (geoError) {
+    logText += `GPS не получен. Причина: [${geoError.code}] ${geoError.message}\n`;
+    logText += "Определение положения только по IP.\n";
+  } else {
+    logText += "Координаты по GPS не получены — определение только по IP.\n";
+  }
+
+  // Логируем
+  console.log(logText);
 
   return {
     statusCode: 200,
-    body: "ok",
+    body: 'ok'
   };
 };
