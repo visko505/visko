@@ -1,18 +1,6 @@
-const fs = require('fs').promises;
-
 exports.handler = async (event) => {
   const ip = event.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
   const time = new Date().toISOString();
-  
-  const file = '/tmp/ips.txt';
-  const log = `${time} | ${ip}\n`;
-  
-  try {
-    const data = await fs.readFile(file, 'utf8');
-    await fs.writeFile(file, log + data);
-  } catch {
-    await fs.writeFile(file, log);
-  }
-  
+  console.log(`${time} | IP: ${ip}`); // Выводится прямо в Netlify логах
   return { statusCode: 200 };
 };
