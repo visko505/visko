@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>VISKO / ENTER</title>
+    <style>
+      :root{
+        --bg:#050506;
+        --fg:rgba(242,246,255,.92);
+        --muted:rgba(242,246,255,.40);
+        --ease:cubic-bezier(.2,.9,.1,1);
+      }
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{margin:0;background:var(--bg);overflow:hidden}
+
+      .frame{
+        position:fixed;
+        inset:0;
+        width:100vw;
+        height:100vh;
+        border:0;
+        opacity:0;
+        transition:opacity 900ms var(--ease);
+      }
+
+      body[data-entered="true"] .frame{opacity:1}
+
+      .gate{
+        position:fixed;
+        inset:0;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap:14px;
+        background:
+          radial-gradient(900px 620px at 15% 18%, rgba(140,200,255,.14), rgba(0,0,0,0) 60%),
+          radial-gradient(900px 620px at 85% 32%, rgba(110,170,255,.10), rgba(0,0,0,0) 62%),
+          radial-gradient(980px 740px at 55% 92%, rgba(160,225,255,.08), rgba(0,0,0,0) 64%),
+          rgba(0,0,0,.88);
+        opacity:1;
+        transition:opacity 900ms var(--ease);
+      }
+
+      body[data-entered="true"] .gate{opacity:0; pointer-events:none}
+
+      .enter{
+        border:none;
+        background:rgba(255,255,255,.02);
+        color:var(--fg);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size:14px;
+        letter-spacing:.44em;
+        padding:14px 18px;
+        border-radius:999px;
+        border:1px solid rgba(242,246,255,.12);
+        cursor:pointer;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        transition:transform 900ms var(--ease), box-shadow 900ms var(--ease), border-color 900ms var(--ease), opacity 900ms var(--ease);
+        opacity:.92;
+      }
+
+      .enter:hover{
+        transform:translateY(-1px);
+        border-color:rgba(160,215,255,.22);
+        box-shadow:0 0 0 1px rgba(120,190,255,.10), 0 0 30px rgba(120,190,255,.16);
+        opacity:1;
+      }
+
+      .enter:focus-visible{outline:none; box-shadow:0 0 0 2px rgba(140,200,255,.22)}
+
+      .hint{
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size:10px;
+        letter-spacing:.22em;
+        color:var(--muted);
+      }
+
+      #bgAudio{display:none}
+    </style>
+  </head>
+  <body>
+    <audio id="bgAudio" src="./bg.mp3" preload="none" loop></audio>
+
+    <iframe class="frame" src="./index.html" title="VISKO" loading="eager"></iframe>
+
+    <div class="gate" role="dialog" aria-modal="true" aria-label="Enter">
+      <button class="enter" type="button">enter</button>
+      <div class="hint">tap / click</div>
+    </div>
+
+    <script>
+      (function(){
+        var audio = document.getElementById('bgAudio');
+        var btn = document.querySelector('.enter');
+        var gate = document.querySelector('.gate');
+        var entered = false;
+
+        function start(){
+          if (entered) return;
+          entered = true;
+
+          if (audio) {
+            audio.volume = 0.18;
+            try {
+              var p = audio.play();
+              if (p && typeof p.catch === 'function') p.catch(function(){});
+            } catch(e) {}
+          }
+
+          document.body.setAttribute('data-entered','true');
+          window.setTimeout(function(){
+            if (gate) gate.style.display = 'none';
+          }, 900);
+        }
+
+        if (btn) btn.addEventListener('click', start);
+        if (gate) gate.addEventListener('click', function(e){ if (e.target === gate) start(); });
+        window.addEventListener('keydown', function(e){
+          if (e.key === 'Enter' || e.key === ' ') start();
+        });
+      })();
+    </script>
+  </body>
+</html>
