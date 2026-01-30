@@ -6,15 +6,15 @@ exports.handler = async (event) => {
   let geo = '';
 
   try {
-    const res = await fetch(`http://ip-api.com/json/${ip}?fields=country,regionName,city,query`);
+    const res = await fetch(`http://ip-api.com/json/${ip}?fields=country,regionName,city,query,status,message`);
     const data = await res.json();
-    if (data && data.country) {
+    if (data.status === 'success') {
       geo = `Страна: ${data.country}, Регион: ${data.regionName}, Город: ${data.city} (IP: ${data.query})`;
     } else {
-      geo = 'Не удалось получить геолокацию';
+      geo = `Ошибка ip-api: ${data.message || 'Не удалось определить геолокацию'}`;
     }
   } catch (e) {
-    geo = 'Ошибка определения геолокации';
+    geo = `Ошибка запроса: ${e.message}`;
   }
 
   console.log(`${time} | IP: ${ip} | ${geo}`);
