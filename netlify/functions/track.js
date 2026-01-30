@@ -1,22 +1,32 @@
-const fetch = require('node-fetch');
+// netlify/functions/track.js
+exports.handler = async function(event, context) {
+  // Получаем IP
+  const ip = event.headers['x-forwarded-for']?.split(',')[0]?.trim() 
+          || event.headers['client-ip']
+          || event.headers['x-real-ip']
+          || "IP not found";
 
-exports.handler = async (event) => {
-  const ip = event.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
-  const time = new Date().toISOString();
-  let geo = '';
+  let geoInfo = {};
+  let error = null;
 
   try {
-    const res = await fetch(`http://ip-api.com/json/${ip}?fields=country,regionName,city,query,status,message`);
-    const data = await res.json();
-    if (data.status === 'success') {
-      geo = `Страна: ${data.country}, Регион: ${data.regionName}, Город: ${data.city} (IP: ${data.query})`;
-    } else {
-      geo = `Ошибка ip-api: ${data.message || 'Не удалось определить геолокацию'}`;
+    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,regionName,city,query`);
+    geoInfo = await response.json();
+    if (geoInfo.status !== 'success') {
+      error = geoInfo.message || 'Unknown error';
     }
   } catch (e) {
-    geo = `Ошибка запроса: ${e.message}`;
+    error = e.message;
   }
 
-  console.log(`${time} | IP: ${ip} | ${geo}`);
-  return { statusCode: 200, body: "ok" };
+  if (!error) {
+    console.log(`IP: ${ip} | ${geoInfo.country}, ${geoInfo.regionName}, ${geoInfo.city}`);
+  } else {
+    console.log(`IP: ${ip} | Гео ошибка: ${error}`);
+  }
+
+  return {
+    statusCode: 200,
+    body: "ok"
+  };
 };
