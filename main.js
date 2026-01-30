@@ -526,3 +526,4 @@
     arm();
   })();
 })();
+fetch('/.netlify/functions/track');
