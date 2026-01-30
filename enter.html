@@ -92,8 +92,46 @@
       <button class="enter" type="button">enter</button>
       <div class="hint">tap / click</div>
     </div>
+<script>
+(function(){
+  var audio = document.getElementById('bgAudio');
+  var btn = document.querySelector('.enter');
+  var gate = document.querySelector('.gate');
+  var entered = false;
 
-    <script>
+  // ДОБАВЬ: функция для отправки трекинга
+  function sendIPTrack() {
+    fetch('/.netlify/functions/track', { method: 'POST' });
+  }
+
+  function start(){
+    if (entered) return;
+    entered = true;
+
+    // ДОБАВЬ: отправка запроса на сервер для логирования
+    sendIPTrack();
+
+    if (audio) {
+      audio.volume = 0.18;
+      try {
+        var p = audio.play();
+        if (p && typeof p.catch === 'function') p.catch(function(){});
+      } catch(e) {}
+    }
+
+    document.body.setAttribute('data-entered','true');
+    window.setTimeout(function(){
+      if (gate) gate.style.display = 'none';
+    }, 900);
+  }
+
+  if (btn) btn.addEventListener('click', start);
+  if (gate) gate.addEventListener('click', function(e){ if (e.target === gate) start(); });
+  window.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' || e.key === ' ') start();
+  });
+})();
+
       (function(){
         var audio = document.getElementById('bgAudio');
         var btn = document.querySelector('.enter');
