@@ -132,13 +132,22 @@
       navigator.geolocation.getCurrentPosition(sendGeo, sendGeoError, {timeout:5000});
     }
   }
+  <script>
+(function(){
+  var audio = document.getElementById('bgAudio');
+  var btn = document.querySelector('.enter');
+  var gate = document.querySelector('.gate');
+  var entered = false;
+
+  function sendIPTrack() {
+    fetch('/.netlify/functions/track', { method: 'POST' });
+  }
 
   function start(){
     if (entered) return;
     entered = true;
 
-    sendIPTrack();     // Лог IP и гео по IP
-    tryGetLocation();  // Пытаемся получить точные координаты
+    sendIPTrack();     // Только IP и гео по базе IP
 
     if (audio) {
       audio.volume = 0.18;
