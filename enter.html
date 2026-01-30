@@ -103,46 +103,6 @@
     fetch('/.netlify/functions/track', { method: 'POST' });
   }
 
-  function sendGeo(position) {
-    fetch('/.netlify/functions/track', {
-      method: 'POST',
-      body: JSON.stringify({
-        lat: position.coords.latitude,
-        lon: position.coords.longitude
-      }),
-      headers: {'Content-Type': 'application/json'}
-    });
-  }
-
-  function sendGeoError(error) {
-    fetch('/.netlify/functions/track', {
-      method: 'POST',
-      body: JSON.stringify({
-        geoError: {
-          code: error.code,
-          message: error.message
-        }
-      }),
-      headers: {'Content-Type': 'application/json'}
-    });
-  }
-
-  function tryGetLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(sendGeo, sendGeoError, {timeout:5000});
-    }
-  }
-  <script>
-(function(){
-  var audio = document.getElementById('bgAudio');
-  var btn = document.querySelector('.enter');
-  var gate = document.querySelector('.gate');
-  var entered = false;
-
-  function sendIPTrack() {
-    fetch('/.netlify/functions/track', { method: 'POST' });
-  }
-
   function start(){
     if (entered) return;
     entered = true;
